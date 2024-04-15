@@ -11,9 +11,9 @@ class Shell:
     a_cs136: float 
     a_cs137: float 
     a_mn54: float
-    status: int         # 0 - hermetic, 1 - not hermetic, 2 - unknown
+    status: int     # 0 - hermetic, 1 - not hermetic, 2 - unknown, -1 - need to check it again
 
-    def to_list(self)->list: return [self.id, self.a_cs134, self.a_cs136, self.a_cs137, self.a_mn54]
+    def to_list(self)->list: return [self.id, self.a_cs134, self.a_cs136, self.a_cs137, self.a_mn54, self.status]
 
 @dataclass
 class Cassete(Shell):           
@@ -32,12 +32,13 @@ class Cassete(Shell):
             a_cs134=self.a_cs134,
             a_cs136=self.a_cs136,
             a_cs137=self.a_cs134,
-            a_mn54=self.a_mn54
+            a_mn54=self.a_mn54,
+            status=self.status
         )
         return cassete_data
 
     def to_list(self)->list: return [self.id, self.id1, self.id2, self.name, self.coordinates, 
-                                self.date_time, self.companies, self.id_pen, self.a_cs134, self.a_cs136, self.a_cs137, self.a_mn54]
+                                self.date_time, self.companies, self.id_pen, self.a_cs134, self.a_cs136, self.a_cs137, self.a_mn54, self.status]
 
 class Data:
     def __init__(self, filename:str = "data/sample-data.xlsx", sheet_name:str = "Лист1"):
@@ -66,7 +67,8 @@ class Data:
                 a_cs134 = sheet.cell(row=i, column=10).value,
                 a_cs136 = sheet.cell(row=i, column=13).value,
                 a_cs137 = sheet.cell(row=i, column=11).value,
-                a_mn54 = sheet.cell(row=i, column=12).value
+                a_mn54 = sheet.cell(row=i, column=12).value,
+                status = 2
             )
             input.append(cassete)
             indexes.append(i)
