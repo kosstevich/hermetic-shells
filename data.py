@@ -5,19 +5,8 @@ import statistics
 import tabulate
 
 @dataclass
-class Shell:
-    id: int             # Row number in the table
-    a_i131: float       # Activity I^131
-    a_cs134: float 
-    a_cs136: float 
-    a_cs137: float 
-    a_mn54: float
-    status: int     # 0 - hermetic, 1 - non-hermetic, 2 - unknown, -1 - need to check it again
-
-    def to_list(self)->list: return list([self.id, self.a_cs134, self.a_cs136, self.a_cs137, self.a_mn54, self.status])
-
-@dataclass
-class Cassete(Shell):           
+class Cassete:   
+    id: int             # Row number in the table        
     id1: int            # Measure number
     id2: int            # Id cassete
     name: str           # Cassete name
@@ -25,21 +14,16 @@ class Cassete(Shell):
     date_time: datetime  
     companies: int      # Cassete age
     id_pen: int         # Number of experemental penal
-
-    def to_Shell(self)->Shell:
-        cassete_data = Shell(
-            id = self.id,
-            a_i131 = self.a_i131,
-            a_cs134=self.a_cs134,
-            a_cs136=self.a_cs136,
-            a_cs137=self.a_cs134,
-            a_mn54=self.a_mn54,
-            status=self.status
-        )
-        return cassete_data
+    a_i131: float       # Activity I^131
+    a_cs134: float 
+    a_cs136: float 
+    a_cs137: float 
+    a_xe133: float 
+    a_mn54: float
+    status: int         # 0 - hermetic, 1 - non-hermetic, 2 - unknown, -1 - need to check it again
 
     def to_list(self)->list: return list([self.id, self.id1, self.id2, self.name, self.coordinates, 
-                                self.date_time, self.companies, self.id_pen, self.a_cs134, self.a_cs136, self.a_cs137, self.a_mn54, self.status])
+                                self.date_time, self.companies, self.id_pen, self.a_cs134, self.a_cs136, self.a_cs137, self.a_xe133, self.a_mn54, self.status])
 
 class Data:
     def __init__(self, filename:str = "data/sample-data.xlsx", sheet_name:str = "Лист1"):
@@ -68,6 +52,7 @@ class Data:
                 a_i131 = sheet.cell(row=i, column=9).value,
                 a_cs134 = sheet.cell(row=i, column=10).value,
                 a_cs136 = sheet.cell(row=i, column=13).value,
+                a_xe133 = sheet.cell(row=i, column=14).value,
                 a_cs137 = sheet.cell(row=i, column=11).value,
                 a_mn54 = sheet.cell(row=i, column=12).value,
                 status = 2
