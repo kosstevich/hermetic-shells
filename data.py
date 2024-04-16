@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from openpyxl import load_workbook
 from datetime import datetime
-import statistics
 import tabulate
 
 @dataclass
@@ -23,7 +22,7 @@ class Cassete:
     status: int         # 0 - hermetic, 1 - non-hermetic, 2 - unknown, -1 - need to check it again
 
     def to_list(self)->list: return list([self.id, self.id1, self.id2, self.name, self.coordinates, 
-                                self.date_time, self.companies, self.id_pen, self.a_cs134, self.a_cs136, self.a_cs137, self.a_xe133, self.a_mn54, self.status])
+                                self.date_time, self.companies, self.id_pen, self.a_i131, self.a_cs134, self.a_cs136, self.a_cs137, self.a_xe133, self.a_mn54, self.status])
 
 class Data:
     def __init__(self, filename:str = "data/sample-data.xlsx", sheet_name:str = "Лист1"):

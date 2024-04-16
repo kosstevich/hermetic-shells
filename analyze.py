@@ -1,4 +1,5 @@
 from data import Data
+import statistics
 import tabulate
 
 class Fragment:
@@ -8,12 +9,20 @@ class Fragment:
 
     def calc_fields(self):
         #TODO
-        # self.a_i131_amean = statistics.mean(self.data.)     # Arithmetic mean activity I^131
         a_i131_list = self._get_activity_list("a_i131")
         a_cs134_list = self._get_activity_list("a_cs134")
         a_cs136_list = self._get_activity_list("a_cs136")
         a_cs137_list = self._get_activity_list("a_cs137")
+        a_xe133_list = self._get_activity_list("a_xe133")
         a_mn54_list = self._get_activity_list("a_mn54")
+
+        #print(a_i131_list)
+        self.a_i131_amean = statistics.mean(a_i131_list)      # Arithmetic mean activity I^131
+        self.a_cs134_amean = statistics.mean(a_cs134_list)
+        self.a_cs136_amean = statistics.mean(a_cs136_list)
+        self.a_cs137_amean = statistics.mean(a_cs137_list)
+        self.a_xe133_amean = statistics.mean(a_xe133_list)
+        self.a_mn54_amean = statistics.mean(a_mn54_list)
     
     def _get_activity_list(self, activity:str):
         activity_list = []
