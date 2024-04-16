@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from openpyxl import load_workbook
 from datetime import datetime
 import statistics
+import tabulate
 
 @dataclass
 class Shell:
@@ -11,9 +12,9 @@ class Shell:
     a_cs136: float 
     a_cs137: float 
     a_mn54: float
-    status: int     # 0 - hermetic, 1 - not hermetic, 2 - unknown, -1 - need to check it again
+    status: int     # 0 - hermetic, 1 - non-hermetic, 2 - unknown, -1 - need to check it again
 
-    def to_list(self)->list: return [self.id, self.a_cs134, self.a_cs136, self.a_cs137, self.a_mn54, self.status]
+    def to_list(self)->list: return list([self.id, self.a_cs134, self.a_cs136, self.a_cs137, self.a_mn54, self.status])
 
 @dataclass
 class Cassete(Shell):           
@@ -37,12 +38,13 @@ class Cassete(Shell):
         )
         return cassete_data
 
-    def to_list(self)->list: return [self.id, self.id1, self.id2, self.name, self.coordinates, 
-                                self.date_time, self.companies, self.id_pen, self.a_cs134, self.a_cs136, self.a_cs137, self.a_mn54, self.status]
+    def to_list(self)->list: return list([self.id, self.id1, self.id2, self.name, self.coordinates, 
+                                self.date_time, self.companies, self.id_pen, self.a_cs134, self.a_cs136, self.a_cs137, self.a_mn54, self.status])
 
 class Data:
     def __init__(self, filename:str = "data/sample-data.xlsx", sheet_name:str = "Лист1"):
         self.input_data, self.cass_indexes = self._read(filename, sheet_name)
+        self.clear_data = self._clear()
 
     def _read(self, filename:str, sheet_name:str):
         file = load_workbook(filename)
@@ -74,23 +76,34 @@ class Data:
             indexes.append(i)
         return input, indexes
     
-    def _get_list_by_range_id(self, left:int, right:int)->list:
+    def _clear(self):
+        clear_data = []
+        for i in range(0,len(self.input_data)):
+            if self.input_data[i].id1 != None and self.input_data[i].id2 != None:
+                clear_data.append(self.input_data[i])
+
+        return clear_data
+
+    def _get_interval_by_range_id(self, left:int, right:int)->list:
         output = []
-        for i in range(left, right+1): output.append(self.input_data[self.cass_indexes.index(i)])
+        # for i in range(left, right+1): output.append(self.input_data[self.cass_indexes.index(i)])
+        i = 0 
+        while self.clear_data[i].id1 <= right:
+            if self.clear_data[i].id1 >= left:
+                output.append(self.clear_data[i])
+            i+=1
+            if i==len(self.clear_data):
+                break
         return output
     
     def divide_into_intervals(self, intervals:list)->list: 
-        intervals_data = [[]]
-        #TODO
+        intervals_data = []
+        for i in range(0,len(intervals)):
+            intervals_data.append(self._get_interval_by_range_id(intervals[i][0],intervals[i][1]))
         return intervals_data
 
-class Fragment:
-    def __init__(self, fragment:list):
-        self.data = []
-        for i in range(0,len(fragment)):
-            data.append(fragment.to_Shell)
-
-    def calc_fields(self):
-        #TODO
-        # self.a_i131_amean = statistics.mean(self.data.)     # Arithmetic mean activity I^131
-        pass
+    def print(self, content:str):
+        ls = []
+        for i in range(0,len(self.__dict__[content])):
+            ls.append(self.__dict__[content][i].to_list())
+        print(tabulate.tabulate(ls))
