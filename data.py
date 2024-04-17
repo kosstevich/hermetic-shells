@@ -64,6 +64,18 @@ class Data:
         clear_data = []
         for i in range(0,len(self.input_data)):
             if self.input_data[i].id1 != None and self.input_data[i].id2 != None:
+                if self.input_data[i].a_i131 == "н/н":
+                    self.input_data[i].a_i131 = 0
+                if self.input_data[i].a_cs134 == "н/н":
+                    self.input_data[i].a_cs134 = 0
+                if self.input_data[i].a_cs136 == "н/н":
+                    self.input_data[i].a_cs136 = 0
+                if self.input_data[i].a_cs137 == "н/н":
+                    self.input_data[i].a_cs137 = 0
+                if self.input_data[i].a_xe133 == "н/н":
+                    self.input_data[i].a_xe133 = 0
+                if self.input_data[i].a_mn54 == "н/н":
+                    self.input_data[i].a_mn54 = 0
                 clear_data.append(self.input_data[i])
 
         return clear_data
