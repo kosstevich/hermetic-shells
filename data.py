@@ -2,8 +2,18 @@ import pandas as pd
 import numpy as np
 
 class Data:
-    def __init__(self, filename:str = "data/sample-data.xlsx", sheet_name:str = "Лист1"):
-        self.input_data, self.data, self.cassetes = self._clear_data(pd.read_excel(filename, sheet_name))
+    def __init__(self, filename:str = "data/sample-data.ods", sheet_name:str = "Лист1"):
+        pd.set_option('display.max_rows', None)
+        try:
+            self.input_data, self.data, self.cassetes = self._clear_data(pd.read_excel(filename, sheet_name))
+            print(self.cassetes)
+        except FileNotFoundError:
+            print("Указанный файл не существует")
+        except PermissionError:
+            print("У вас нет прав на чтение данного файла")
+        except Exception as e:
+            print(f"Произошла ошибка: {e}")
+        
         
     def _clear_data(self, df):
         """На текущий момент данные очищаются под конкретный шаблон из пробных данных(КГО 5 блок 2019).
@@ -38,5 +48,9 @@ class Data:
         cassetes = cassetes.reset_index(drop=True)
         
         return input_data, data, cassetes
-
-data = Data()
+    
+    def divide_into_intervals(self, intervals_delta:list): # 2-dimensional list of periods, e.g. [[a,b],[b,c]]
+        intervals = []
+        for i in range(0,len(intervals_delta)):
+            intervals.append(self.cassetes.iloc[intervals_delta[i][0]:intervals_delta[i][1]])
+        return intervals
