@@ -53,6 +53,7 @@ class Fragment:
                         else: self.non_hermetic[cassete["Id1"]].append(criteriums[i])
                         #print(df.index[df['Id1']==df["Id1"].iloc[j]].to_list()[0])
                         #df = df.drop(df.index[df['Id1']==df["Id1"].iloc[j]].to_list()[0])
+            
             if not non_hermetic:
                 break
 
