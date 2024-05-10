@@ -14,15 +14,14 @@ class Analyze:
         for i in range(0,len(self.data.penals)):
             self.penals.append(Penal(self.data.penals[i]))
 
-    def control(self):
+    def control(self): #TODO many penals
         print(self.penals[0].cassetes)
         intervals_delta = [[40,102]] # Hardcode, _get_intervals() in future
         self.penals[0].divide_into_fragments(intervals_delta)
         self.penals[0].analyze()
-        # for i in range(0,len(self.penals)):
-        #     intervals_delta = self._get_intervals()
-        #     self.penals[i].divide_into_fragments(intervals_delta)
-        #     self.penals[i].analyze()
+
+    def recheck(self): #TODO
+        pass
 
     def _get_intervals(self):
         pass    

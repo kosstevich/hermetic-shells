@@ -18,16 +18,30 @@ class Penal:
     def analyze(self):
         for i in range(0,len(self.fragments)):
             self.fragments[i].check()
-            print(self.fragments[i].df)
-            print(self.fragments[i].non_hermetic)
+            if self.fragments[i].non_hermetic:
+                print("Негерметичные ТВС")
+                print(self.get_df_by_dict(self.fragments[i].non_hermetic))
+                print(self.fragments[i].non_hermetic)
+            if self.fragments[i].recheck:
+                print("ТВС для повторной проверки:")
+                print(self.get_df_by_dict(self.fragments[i].recheck))
+                print(self.fragments[i].recheck)
 
-    def check_distribution(self):
+    def get_df_by_dict(self, shells):
+        keys = list(shells.keys())
+        return self.data.loc[keys]
+
+    def add_recheck_data(self):     #TODO
+        pass
+
+    def check_distribution(self):   #TODO
         pass
 
 class Fragment:
     def __init__(self, df):
         self.df = df
         self.non_hermetic = {} # {Id1:[criterium1,criterium2],...}
+        self.recheck = {}
 
     def check(self): # RD_6.7.1.5
         while True:
@@ -42,17 +56,20 @@ class Fragment:
                 a_corosion_std = df["Mn-54"].std()
 
                 for j in range(0,len(df)):
-                    if (not self._isHermetic(df[criteriums[i]].iloc[j], a_mean, a_std, len(df))) and (pd.notna(df[criteriums[i]].iloc[j])):
+                    if (not self._isCriterium(df[criteriums[i]].iloc[j], a_mean, a_std, len(df))) and (pd.notna(df[criteriums[i]].iloc[j])):
                         cassete = df.iloc[j]
-                        exist = non_hermetic.get(cassete["Id1"])
-                        if not exist: non_hermetic[cassete["Id1"]] = [criteriums[i]]
-                        else: non_hermetic[cassete["Id1"]].append(criteriums[i])
+                        if self._isCriterium(df["Mn-54"].iloc[j], a_corosion_mean, a_corosion_std, len(df)):
+                            exist = non_hermetic.get(cassete["Id1"])
+                            if not exist: non_hermetic[cassete] = [criteriums[i]]
+                            else: non_hermetic[cassete].append(criteriums[i])
 
-                        exist = self.non_hermetic.get(cassete["Id1"])
-                        if not exist: self.non_hermetic[cassete["Id1"]] = [criteriums[i]]
-                        else: self.non_hermetic[cassete["Id1"]].append(criteriums[i])
-                        #print(df.index[df['Id1']==df["Id1"].iloc[j]].to_list()[0])
-                        #df = df.drop(df.index[df['Id1']==df["Id1"].iloc[j]].to_list()[0])
+                            exist = self.non_hermetic.get(cassete["Id1"])
+                            if not exist: self.non_hermetic[cassete["Id1"]] = [criteriums[i]]
+                            else: self.non_hermetic[cassete["Id1"]].append(criteriums[i])
+                        else:   #TODO RD_6.7.1.9
+                            exist = self.recheck.get(cassete["Id1"])
+                            if not exist: self.recheck[cassete["Id1"]] = [criteriums[i]]
+                            else: self.recheck[cassete["Id1"]].append(criteriums[i])
             
             if not non_hermetic:
                 break
@@ -63,6 +80,6 @@ class Fragment:
                 self.df = self.df.loc[self.df["Id1"]!=id_remove[i]]
                 self.df = self.df.reset_index(drop=True)
 
-    def _isHermetic(self, activity, mean, std, n):
+    def _isCriterium(self, activity, mean, std, n):
         student = {2:12.7, 3:4.3, 4:3.18, 5:2.78, 6:2.57, 7:2.45, 8:2.36, 9:2.31, 10:2.26}
         return activity <= mean+student.get(n,3)*std
