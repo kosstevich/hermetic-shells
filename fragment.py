@@ -18,8 +18,10 @@ class Penal:
     def analyze(self):
         for i in range(0,len(self.fragments)):
             self.fragments[i].check()
+            print("Выборка %d:" % (i+1))
             if self.fragments[i].non_hermetic:
                 print("Негерметичные ТВС")
+                print(self.fragments[i].non_hermetic)
                 print(self.get_df_by_dict(self.fragments[i].non_hermetic))
                 print(self.fragments[i].non_hermetic)
             if self.fragments[i].recheck:
@@ -29,7 +31,10 @@ class Penal:
 
     def get_df_by_dict(self, shells):
         keys = list(shells.keys())
-        return self.data.loc[keys]
+        df = self.data.loc[np.where(self.data["Id1"] == keys[0])]
+        for i in range(1,len(keys)):
+            df = pd.concat([df,self.data.loc[np.where(self.data["Id1"] == keys[i])]], ignore_index=True)
+        return df
 
     def add_recheck_data(self):     #TODO
         pass
@@ -60,8 +65,8 @@ class Fragment:
                         cassete = df.iloc[j]
                         if self._isCriterium(df["Mn-54"].iloc[j], a_corosion_mean, a_corosion_std, len(df)):
                             exist = non_hermetic.get(cassete["Id1"])
-                            if not exist: non_hermetic[cassete] = [criteriums[i]]
-                            else: non_hermetic[cassete].append(criteriums[i])
+                            if not exist: non_hermetic[cassete["Id1"]] = [criteriums[i]]
+                            else: non_hermetic[cassete["Id1"]].append(criteriums[i])
 
                             exist = self.non_hermetic.get(cassete["Id1"])
                             if not exist: self.non_hermetic[cassete["Id1"]] = [criteriums[i]]

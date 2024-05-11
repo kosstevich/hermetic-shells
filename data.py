@@ -6,7 +6,7 @@ class Data:
         pd.set_option('display.max_rows', None)
         pd.set_option('future.no_silent_downcasting', True)
         try:
-            self.input_data, self.penals, self.cassetes = self._clear_data(pd.read_excel(filename, sheet_name))
+            self.input_data, self.penals, self.penals_values, self.cassetes = self._clear_data(pd.read_excel(filename, sheet_name))
             #print(self.input_data)
             #print(self.cassetes)
             #print(self.penals)
@@ -44,15 +44,15 @@ class Data:
         input_data = df
 
         penal_values = df["IdPenal"].unique()
+        penal_values = penal_values[~np.isin(penal_values, 0)]
         penals = []
 
         for i in range(0,len(penal_values)):
             penal = penal_values[i]
-            if penal == 0: continue
             d = df[df.IdPenal==penal]
             d = d.reset_index(drop=True)
             penals.append(d)
         
         cassetes = input_data.dropna(subset=["Id1"])
         cassetes = cassetes.reset_index(drop=True)
-        return input_data, penals, cassetes
+        return input_data, penals, penal_values, cassetes
