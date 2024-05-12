@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from scipy import stats
 
 class Penal:
     def __init__(self,df, id):
@@ -77,13 +78,13 @@ class Penal:
 
         #print("subfragments: ", subfragments)
         #print("subfragments_log_vars:", subfragments_log_vars)
-        print("Критерий:", criterium)
-        err = self.check_vars(len(self.cassetes), m, subfragments, subfragments_log_vars)
+        check_vars_result = self.check_vars(len(self.cassetes), m, subfragments, subfragments_log_vars,criterium)
+        print(check_vars_result)
 
-        if err:
-            return None
-        else:
-            return "Error" 
+        # if err:
+        #     return None
+        # else:
+        #     return "Error" 
 
     def random_generate(self, i, fragments_data):
         n1 = [] # subfragment1
@@ -99,7 +100,7 @@ class Penal:
 
         return np.array(n1), np.array(n2)
 
-    def check_vars(self, n, m, subfragments, subfragments_log_vars): #RD_ZH.7
+    def check_vars(self, n, m, subfragments, subfragments_log_vars, criterium): #RD_ZH.7
         err = ""
         
         vl = 0
@@ -118,7 +119,6 @@ class Penal:
                 yiv += (len(subfragments[i][j])-1)*subfragments_log_vars[i][j]
                 vsum+=(len(subfragments[i][j])-1)
 
-            #v = np.array(v)
             vij.append(v)
             vi.append(np.array(vsum))
             vs += vsum
@@ -126,10 +126,8 @@ class Penal:
             yi.append(np.array(yiv / vsum))
         
         yi = np.array(yi)
-        #vij = np.array(vij)
         vi = np.array(vi)
 
-        #v = vij.sum()
         v = vs
         y = (vi*yi)/v
         y = y.sum()
@@ -142,25 +140,17 @@ class Penal:
                 ssl+=((subfragments_log_vars[i][j] - yi[i])**2)*vij[i][j]
                 
         ssl /= vl
-        statistic = ssl/ssh
+        if ssl>=ssh:
+            statistic = ssl/ssh
+        else:
+            statistic = ssh/ssl
 
-        #     for j in range(0, len(subfragments[i])):
-        #         pass
-        print()
-        print("n", n)
-        print("m", m)
-        print("vl",vl)
-        print("yi", yi)
-        print("vi",vi)
-        print("vij",vij)
-        print("v",v)
-        print("y ", y.sum())
-        print("ssh",ssh)
-        print("ssl",ssl)
-        print("ssl/ssh", statistic)
-        print()
+        #norm = stats.norm()
+        #p = norm.cdf(statistic) # cdf(x,loc=0,scale=1) loc-mena, scale=std
+        #print("P(N(0,1))", p)
+        result = pd.Series({"criterium": criterium,"statistic":statistic, "ssh":ssh,"ssl":ssl,"n":n, "m":m, "vl":vl, "yi":yi, "vi":vi,"vij":vij,"v":v,"y":y,})
 
-        return err
+        return result
 
 
 class Fragment:
