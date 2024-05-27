@@ -4,9 +4,9 @@ import numpy as np
 class Data:
     def __init__(self, filename:str = "data/sample-data.ods", sheet_name:str = "Лист1"):
         pd.set_option('display.max_rows', None)
-        pd.set_option('future.no_silent_downcasting', True)
+        #pd.set_option('future.no_silent_downcasting', True)
         try:
-            self.input_data, self.penals, self.penals_values, self.cassetes = self._clear_data(pd.read_excel(filename, sheet_name))
+            self.input_data, self.penals, self.penals_id, self.cassetes = self._clear_data(pd.read_excel(filename, sheet_name))
             #print(self.input_data)
             #print(self.cassetes)
             #print(self.penals)
@@ -43,16 +43,16 @@ class Data:
         df = df.iloc[:repeat]
         input_data = df
 
-        penal_values = df["IdPenal"].unique()
-        penal_values = penal_values[~np.isin(penal_values, 0)]
+        penals_id = df["IdPenal"].unique()
+        penals_id = penals_id[~np.isin(penals_id, 0)]
         penals = []
 
-        for i in range(0,len(penal_values)):
-            penal = penal_values[i]
+        for i in range(0,len(penals_id)):
+            penal = penals_id[i]
             d = df[df.IdPenal==penal]
             d = d.reset_index(drop=True)
             penals.append(d)
         
         cassetes = input_data.dropna(subset=["Id1"])
         cassetes = cassetes.reset_index(drop=True)
-        return input_data, penals, penal_values, cassetes
+        return input_data, penals, penals_id, cassetes

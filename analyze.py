@@ -13,26 +13,26 @@ class Analyze:
         self.penals = []
         self.penals_intervals = {}
         for i in range(0,len(self.data.penals)):
-            self.penals.append(Penal(self.data.penals[i], self.data.penals_values[i]))
-            print("Пенал:",self.data.penals_values[i])
+            self.penals.append(Penal(self.data.penals[i], self.data.penals_id[i]))
+            print("Пенал:",self.data.penals_id[i])
             print("Значения для ТВС:")
             print(self.penals[i].cassetes)
 
     def control(self): #TODO many penals
-        for i in range(0,len(self.data.penals_values)):
-            intervals_delta = self._get_intervals(self.data.penals_values[i])
+        for i in range(0,len(self.data.penals_id)):
+            intervals_delta = self._get_intervals(self.data.penals_id[i])
             #intervals_delta = [[1,40],[40,102]]
-            self.penals_intervals[int(self.data.penals_values[i])] = intervals_delta
+            self.penals_intervals[int(self.data.penals_id[i])] = intervals_delta
             
-            print("Пенал %d:" % self.data.penals_values[i])
+            print("Пенал %d:" % self.data.penals_id[i])
             self.penals[i].divide_into_fragments(intervals_delta)
 
             self.penals[i].analyze()
 
-        # for i in range(0,len(self.data.penals_values)):
+        # for i in range(0,len(self.data.penals_id)):
 
-    def _get_intervals(self, interval_id):
-        n = int(input("Введите количество интервалов для пенала %d: " % interval_id))
+    def _get_intervals(self, penal_id):
+        n = int(input("Введите количество интервалов для пенала %d: " % penal_id))
         intervals_delta = []
         for i in range(0,n):
             a = int(input("Введите левую границу интервала %d: " % (i+1)))
