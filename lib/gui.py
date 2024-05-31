@@ -15,17 +15,18 @@ class PlotData(FigureCanvasQTAgg):
     '''
     Виджет для отрисовки графиков, использующий matplotlib
     '''
-    def __init__(self, parent=None, df=None, axe_x="Id1", axe_y="I-131", type="barplot"):
+    def __init__(self, parent=None, df=None, axe_x="Id1", axe_y="I-131", type="barplot", title=None):
         sns.set(style="whitegrid", context="paper")
         self.fig = plt.figure(figsize=(15, 10))
         self.axes = self.fig.add_subplot(111)
-        self.draw_plot(df, axe_x, axe_y, type)
+        #self.draw_plot(df, axe_x, axe_y, type)
 
         super(PlotData, self).__init__(self.fig)
     
-    def draw_plot(self, df, axe_x="Id1", axe_y="I-131", type = "barplot"):
+    def draw_plot(self, df, axe_x="Id1", axe_y="I-131", type = "barplot", title=None):
         self.axes.cla()
         getattr(sns,type)(data=df, x=axe_x, y=axe_y, ax=self.axes)
+        plt.title(label=title, fontsize=18)
 
 class PenalWidget(QtWidgets.QWidget):
     def __init__():
@@ -45,7 +46,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for i in range(0,len(self.model.data.penals_id)):
             btn_name = "Пенал %s" % self.model.data.penals_id[i]
             penal_btn = QtWidgets.QPushButton(btn_name)
-            penal_btn.released.connect(lambda id=i: self.update_plot(df = self.model.penals[id].data))
+            penal_btn.released.connect(lambda id=i, name=btn_name: self.update_plot(df = self.model.penals[id].data, title = name))
             layout.addWidget(penal_btn)
 
         self.penal_menu.setLayout(layout)
@@ -62,6 +63,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setCentralWidget(self.widget)
 
-    def update_plot(self, df, axe_x="Id1", axe_y="I-131", type = "barplot"):
-        self.sc.draw_plot(df=df, axe_x=axe_x, axe_y=axe_y, type=type)
+    def update_plot(self, df, axe_x="Id1", axe_y="I-131", type = "barplot", title=None):
+        self.sc.draw_plot(df=df, axe_x=axe_x, axe_y=axe_y, type=type, title=title)
         self.sc.draw()
