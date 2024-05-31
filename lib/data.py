@@ -6,7 +6,7 @@ class Data:
     Класс предварительной обработки данных
     Используется для получения и очистки данных из таблицы .ods 
     '''
-    def __init__(self, filename:str = "../data/sample-data.ods", sheet_name:str = "Лист1"):
+    def __init__(self, filename:str, sheet_name:str = "Лист1"):
         pd.set_option('display.max_rows', None)
         #pd.set_option('future.no_silent_downcasting', True)
         try:

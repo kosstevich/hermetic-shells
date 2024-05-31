@@ -8,7 +8,7 @@ class Model:
     '''
     Класс обёртка для Data и Penal
     '''
-    def __init__(self, filename = "data/sample-data.ods"):
+    def __init__(self, filename = "../data/sample-data.ods"):
         self.data = Data(filename)
         
         self.penals = []

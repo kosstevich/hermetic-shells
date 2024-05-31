@@ -6,9 +6,9 @@ import sys
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     
-    filename = open_file()
+    #filename = open_file()
 
-    model = Model(filename)
+    model = Model()
     
     main_window = MainWindow(model)
     main_window.show()
