@@ -11,8 +11,10 @@ def open_file():
     filename, _ = QtWidgets.QFileDialog.getOpenFileName(None, 'Выберите входной файл', './', "Table (*.ods)")
     return filename
 
-class PlotData(FigureCanvasQTAgg):
-
+class PlotData(FigureCanvasQTAgg): 
+    '''
+    Виджет для отрисовки графиков, использующий matplotlib
+    '''
     def __init__(self, parent=None, df=None, axe_x=None, axe_y=None, type="barplot"):
         self.fig = plt.figure()
         self.axes = self.fig.add_subplot(111)
@@ -24,8 +26,13 @@ class PlotData(FigureCanvasQTAgg):
         self.axes.cla()
         getattr(sns,type)(data=df, x=axe_x, y=axe_y, ax=self.axes)
 
-class OpenFile():
-    pass
+class PenalWidget(QtWidgets.QWidget):
+    def __init__():
+        pass
+
+class Menu(QtWidgets.QWidget):
+    def __init__():
+        pass
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, model, *args, **kwargs):

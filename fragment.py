@@ -3,7 +3,9 @@ import pandas as pd
 from scipy import stats
 
 class Penal:
-    
+    '''
+    Сущность, которая отвечает за конкретный пенал СОДС 
+    '''
     def __init__(self,df, id):
         self.fragments = []
         self.data = df
@@ -173,12 +175,18 @@ class Penal:
     #     return result
 
 class Fragment:
+    '''
+    Сущность, которая отвечает за выборку 
+    '''
     def __init__(self, df):
         self.df = df
         self.non_hermetic = {} # {Id1:[criterium1,criterium2],...}
         self.recheck = {}
 
-    def check(self): # RD_6.7.1.5
+    def check(self):
+        '''
+        Поиск выброса "3 sigma" согласно RD_6.7.1.5
+        '''
         criteriums = ["I-131","Cs-134","Cs-137","Cs-136","Xe-133"]
         while True:
             non_hermetic = {}
@@ -221,6 +229,9 @@ class Fragment:
         pass
 
     def _isCriterium(self, activity, mean, std, n):
+        '''
+        Проверка критерия "3 sigma"
+        '''
         student = {2:12.7, 3:4.3, 4:3.18, 5:2.78, 6:2.57, 7:2.45, 8:2.36, 9:2.31, 10:2.26}
         critical_value = mean+student.get(n,3)*std
         return activity <= critical_value
