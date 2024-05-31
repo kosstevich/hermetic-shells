@@ -1,17 +1,17 @@
-from analyze import Analyze
-from gui import MainWindow
 from PyQt5 import QtWidgets
+from model import Model
+from gui import MainWindow, open_file
 import sys
 
 if __name__ == "__main__":
-    
-    analyze = Analyze()
-    penals = analyze.get_penals()
-
     app = QtWidgets.QApplication(sys.argv)
-
-    w = MainWindow(penals)
-    analyze.control()
     
+    filename = open_file()
+
+    model = Model(filename)
+    
+    main_window = MainWindow(model)
+    main_window.show()
+
     app.exec_()
     

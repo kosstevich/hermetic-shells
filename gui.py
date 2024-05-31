@@ -5,6 +5,11 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg,NavigationToolb
 from matplotlib.figure import Figure
 import seaborn as sns
 import matplotlib.pyplot as plt
+import random
+
+def open_file():
+    filename, _ = QtWidgets.QFileDialog.getOpenFileName(None, 'Выберите входной файл', './', "Table (*.ods)")
+    return filename
 
 class PlotData(FigureCanvasQTAgg):
 
@@ -23,29 +28,36 @@ class OpenFile():
     pass
 
 class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self, penals, *args, **kwargs):
+    def __init__(self, model, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.resize(1200,900)
+        self.model=model
 
-        self.sc = PlotData(self, df = penals[0].data, axe_x="Id1", axe_y="I-131")
-        self.sc2 = PlotData(self, df = penals[1].data, axe_x="Id1", axe_y="I-131")
+        self.sc = PlotData(self, df = self.model.penals[0].data, axe_x="Id1", axe_y="I-131")
+        self.sc2 = PlotData(self, df = self.model.penals[1].data, axe_x="Id1", axe_y="I-131")
 
         toolbar = NavigationToolbar(self.sc, self)
         toolbar2 = NavigationToolbar(self.sc2, self)
 
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(toolbar)
-        layout.addWidget(self.sc)
-        layout.addWidget(self.sc2)
-        layout.addWidget(toolbar2)
+        self.btn = QtWidgets.QPushButton("Change")
+
+        self.layout = QtWidgets.QVBoxLayout()
+        self.layout.addWidget(toolbar)
+        self.layout.addWidget(self.sc)
+        self.layout.addWidget(self.sc2)
+        self.layout.addWidget(toolbar2)
+
+        self.btn.clicked.connect(self.change_plot)
 
         # Create a placeholder widget to hold our toolbar and canvas.
-        widget = QtWidgets.QWidget()
-        widget.setLayout(layout)
+        self.widget = QtWidgets.QWidget()
+        self.widget.setLayout(self.layout)
 
-        self.setCentralWidget(widget)
-
-        self.show()
+        self.setCentralWidget(self.widget)
+        self.layout.addWidget(self.btn)
 
     def change_plot(self):
-        pass
+        types = ["lineplot","barplot"]
+        i = random.randint(0,1)
+        self.sc.draw_plot(self.model.penals[0].data, axe_x="Id1", axe_y="I-131", type = types[i])
+        self.sc.draw()

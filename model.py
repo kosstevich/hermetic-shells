@@ -4,13 +4,9 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-class Analyze:
-    def __init__(self):
-        filename = input("Введите имя файла(data/sample-data.ods по умолчанию)")
-        if filename == "":
-            self.data = Data()
-        else:
-            self.data = Data(filename)
+class Model:
+    def __init__(self, filename = "data/sample-data.ods"):
+        self.data = Data(filename)
         
         self.penals = []
         self.penals_intervals = {}
