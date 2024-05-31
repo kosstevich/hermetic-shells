@@ -1,6 +1,8 @@
 from data import Data
 from fragment import Penal
 import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 class Analyze:
     def __init__(self):
@@ -20,6 +22,9 @@ class Analyze:
 
     def control(self): #TODO many penals
         for i in range(0,len(self.data.penals_id)):
+        
+        #plt.show()
+        
             intervals_delta = self._get_intervals(self.data.penals_id[i])
             #intervals_delta = [[1,40],[40,102]]
             self.penals_intervals[int(self.data.penals_id[i])] = intervals_delta
@@ -27,9 +32,12 @@ class Analyze:
             print("Пенал %d:" % self.data.penals_id[i])
             self.penals[i].divide_into_fragments(intervals_delta)
 
-            self.penals[i].analyze()
+            #self.penals[i].check_distribution()
+            #self.penals[i].analyze()
+            
 
-        # for i in range(0,len(self.data.penals_id)):
+    def get_penals(self):
+        return self.penals
 
     def _get_intervals(self, penal_id):
         n = int(input("Введите количество интервалов для пенала %d: " % penal_id))

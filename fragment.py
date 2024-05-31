@@ -3,6 +3,7 @@ import pandas as pd
 from scipy import stats
 
 class Penal:
+    
     def __init__(self,df, id):
         self.fragments = []
         self.data = df
@@ -47,7 +48,6 @@ class Penal:
 
             print()
 
-
     def get_data_by_dict(self, shells):
         keys = list(shells.keys())
         df = pd.DataFrame()
@@ -65,7 +65,7 @@ class Penal:
                 
         return df, ext_df
 
-    def add_recheck_data(self):     #TODO
+    def check_distribution(self, criterium):
         pass
 
     # def check_distribution(self,criterium):   #TODO
@@ -171,7 +171,6 @@ class Penal:
     #     result = pd.Series({"criterium": criterium,"statistic":statistic, "ssh":ssh,"ssl":ssl,"n":n, "m":m, "vl":vl, "yi":yi, "vi":vi,"vij":vij,"v":v,"y":y,})
 
     #     return result
-
 
 class Fragment:
     def __init__(self, df):
