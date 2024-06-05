@@ -10,6 +10,9 @@ class Model:
     '''
     def __init__(self, filename = "../data/sample-data.ods"):
         self.data = Data(filename)
+
+        #plt.hist(self.data.cassetes["I-131"], bins=200)
+        #plt.show()
         
         self.penals = []
         self.penals_intervals = {}
@@ -19,20 +22,17 @@ class Model:
             print("Значения для ТВС:")
             print(self.penals[i].cassetes)
 
-    def control(self): #TODO many penals
-        for i in range(0,len(self.data.penals_id)):
-        
-        #plt.show()
-        
-            intervals_delta = self._get_intervals(self.data.penals_id[i])
-            #intervals_delta = [[1,40],[40,102]]
-            self.penals_intervals[int(self.data.penals_id[i])] = intervals_delta
-            
-            print("Пенал %d:" % self.data.penals_id[i])
-            self.penals[i].divide_into_fragments(intervals_delta)
+    def control(self, id): #TODO many penals
 
-            #self.penals[i].check_distribution()
-            #self.penals[i].analyze()
+        intervals_delta = self._get_intervals(self.data.penals_id[id])
+        #intervals_delta = [[1,40],[40,102]]
+        self.penals_intervals[int(self.data.penals_id[id])] = intervals_delta
+        
+        print("Пенал %d:" % self.data.penals_id[id])
+        self.penals[id].divide_into_fragments(intervals_delta)
+
+        #self.penals[i].check_distribution()
+        self.penals[id].analyze()
 
     def get_penals(self):
         return self.penals
