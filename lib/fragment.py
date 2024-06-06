@@ -31,40 +31,18 @@ class Penal:
         for i in range(0,len(self.fragments)):
             print("Выборка %d:" % (i+1))
             #self.fragments[i].check_iqr()
-            self.fragments[i].check3sigma()
-            
-            if self.fragments[i].non_hermetic:
-                df, ext_df = self.get_data_by_dict(self.fragments[i].non_hermetic, self.fragments[i].parameters)
-                print("Негерметичные ТВС")
-                print(df)
-                print("Расширенная информация:")
-                print(ext_df)
-                print()
-                print(self.fragments[i].non_hermetic)
+            non_hermetic_df, recheck_df = self.fragments[i].check3sigma()
 
-            if self.fragments[i].recheck:
-                df, ext_df = self.get_data_by_dict(self.fragments[i].recheck, self.fragments[i].parameters)
+            if not non_hermetic_df.empty:
+                print("Негерметичные ТВС")
+                print(non_hermetic_df)
+
+            if not recheck_df.empty:
                 print("ТВС для повторной проверки:")
-                print(df)
-                print("Расширенная информация:")
-                print(ext_df)
-                print()
+                print(recheck_df)
 
             print()
     
-    def get_data_by_dict(self, shells, ext):
-        keys = list(shells.keys())
-        df = pd.DataFrame()
-
-        ext_df = pd.DataFrame.from_dict(ext, orient="Index", columns=criteriums)
-        
-        for i in range(0,len(keys)):
-            shell = self.data.loc[np.where(self.data["Id1"] == keys[i])]
-            shell["Criteriums"] = str(shells[keys[i]])
-            df = pd.concat([df,shell], ignore_index=True)
-                
-        return df, ext_df
-
     def check_distribution(self, criterium):
         pass
 
@@ -76,12 +54,6 @@ class Fragment:
         self.df = df
         self.non_hermetic = {} # {Id1:[criterium1,criterium2],...}
         self.recheck = {}
-
-        # plt.hist(df["I-131"], bins=len(df))
-        # plt.show()
-        #plt.hist(df["I-131"])
-        #sns.distplot(x=self.df["I-131"], bins=1)
-        #plt.show()
 
     def check_iqr(self):
         criteriums = ["I-131","Cs-134","Cs-137","Cs-136","Xe-133","Mn-54"]
@@ -130,9 +102,12 @@ class Fragment:
         ''' 
         df = self.df
         self.parameters = self.calc_3sigma_params(df)
-
+        print(pd.DataFrame.from_dict(self.parameters, orient="Index", columns=criteriums))
+        self.non_hermetic_df = pd.DataFrame()
+        self.recheck_df=pd.DataFrame()
+        
         while True:
-            non_hermetic = {}
+            remove = pd.DataFrame()
             
             for i in range(0,len(criteriums)-1):
                 
@@ -144,35 +119,28 @@ class Fragment:
                 a_crit = self.crit_value(a_mean, a_std, len(df))
                 a_corosion_crit = self.crit_value(a_corosion_mean, a_corosion_std, len(df))
 
-                # a_3sigma_df = df[(df[criteriums[i]]<a_crit) ]
-                # print()
-                # print("a_3sigma_df[%s]:"%criteriums[i])
-                # print(a_3sigma_df)
-                # print()
-                for j in range(0,len(df)):
-                    if (not self._isCriterium(df[criteriums[i]].iloc[j], a_mean, a_std, len(df))) and (pd.notna(df[criteriums[i]].iloc[j])):
-                        cassete = df.iloc[j]
-                        if self._isCriterium(df["Mn-54"].iloc[j], a_corosion_mean, a_corosion_std, len(df)):
-                            exist = non_hermetic.get(cassete["Id1"])
-                            if not exist: non_hermetic[cassete["Id1"]] = [criteriums[i]]
-                            else: non_hermetic[cassete["Id1"]].append(criteriums[i])
+                a_3sigma_df = df[(df[criteriums[i]]>a_crit)].reset_index(drop=True)
+                non_hermetic_df = a_3sigma_df[a_3sigma_df["Mn-54"]<a_corosion_crit]
+                recheck_df = a_3sigma_df[a_3sigma_df["Mn-54"]>=a_corosion_crit]
 
-                            exist = self.non_hermetic.get(cassete["Id1"])
-                            if not exist: self.non_hermetic[cassete["Id1"]] = [criteriums[i]]
-                            else: self.non_hermetic[cassete["Id1"]].append(criteriums[i])
-                        else:   #TODO RD_6.7.1.9
-                            exist = self.recheck.get(cassete["Id1"])
-                            if not exist: self.recheck[cassete["Id1"]] = [criteriums[i]]
-                            else: self.recheck[cassete["Id1"]].append(criteriums[i])
+                if not non_hermetic_df.empty:
+                    non_hermetic_df["Criterium"] = criteriums[i] 
+                    self.non_hermetic_df = pd.concat([self.non_hermetic_df,non_hermetic_df], ignore_index=True)
+                
+                if not recheck_df.empty:
+                    recheck_df["Criterium"] = criteriums[i] 
+                    self.recheck_df = pd.concat([self.recheck_df,recheck_df], ignore_index=True)
+
+                remove = pd.concat([remove,a_3sigma_df["Id1"]], ignore_index=True)
             
-            if not non_hermetic:
+            if remove.empty:
                 break
 
-            id_remove = list(non_hermetic.keys())
-
-            for i in range(0,len(id_remove)):
-                df = df.loc[df["Id1"]!=id_remove[i]]
+            for i in range(0,len(remove)):
+                df = df.loc[df["Id1"]!=remove[0].iloc[i]]
                 df = df.reset_index(drop=True)
+
+        return self.non_hermetic_df, self.recheck_df
         
 
     def stat_tests(self, criterium):
@@ -180,15 +148,10 @@ class Fragment:
 
     def crit_value(self, mean, std, n):
         student = {2:12.7, 3:4.3, 4:3.18, 5:2.78, 6:2.57, 7:2.45, 8:2.36, 9:2.31, 10:2.26}
-        return mean+student.get(n,3)*std
 
-    def _isCriterium(self, activity, mean, std, n):
-        '''
-        Проверка критерия "3 sigma"
-        '''
-        student = {2:12.7, 3:4.3, 4:3.18, 5:2.78, 6:2.57, 7:2.45, 8:2.36, 9:2.31, 10:2.26}
-        critical_value = mean+student.get(n,3)*std
-        return activity <= critical_value
+        if (not pd.notna(mean)) or (not pd.notna(std)): return 0
+
+        return mean+student.get(n,3)*std
 
 def random_generate(df, criterium):
     n1 = [] # subfragment1

@@ -2,7 +2,6 @@
 
 ## fast-start
 $ cat | python3 main.py << EOF
-
 3
 1
 8
