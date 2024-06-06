@@ -30,8 +30,8 @@ class Penal:
         print("Проверка выборок:")
         for i in range(0,len(self.fragments)):
             print("Выборка %d:" % (i+1))
-            #self.fragments[i].check_iqr()
-            non_hermetic_df, recheck_df = self.fragments[i].check3sigma()
+            #non_hermetic_df, recheck_df = self.fragments[i].check()
+            non_hermetic_df, recheck_df = self.fragments[i].check("IQR")
 
             if not non_hermetic_df.empty:
                 print("Негерметичные ТВС")
@@ -55,26 +55,6 @@ class Fragment:
         self.non_hermetic = {} # {Id1:[criterium1,criterium2],...}
         self.recheck = {}
 
-    def check_iqr(self):
-        criteriums = ["I-131","Cs-134","Cs-137","Cs-136","Xe-133","Mn-54"]
-        print("Check IQR:")
-        for i in range(0,len(criteriums)-1):
-            data = self.df
-            Q1 = data[criteriums[i]].quantile(q=.25)
-            Q3 = data[criteriums[i]].quantile(q=.75)
-            IQR = Q3-Q1
-
-            #only keep rows in dataframe that have values within 1.5\*IQR of Q1 and Q3
-            data_clean = data[(data[criteriums[i]] > (Q3+1.7*IQR))]
-            if not data_clean.empty:
-                print(criteriums[i])
-                print("Q1: ", Q1, "Q3: ", Q3)
-                print("IQR:")
-                print(IQR)
-                print("Q3+1,5*IQR:", Q3 + 1.7*IQR)
-                print("data_clean:")
-                print(data_clean)
-
     def calc_3sigma_params(self, df):
         parameters = {
             "Activity_mean" : [], 
@@ -93,10 +73,7 @@ class Fragment:
         
         return parameters
 
-    def check_3sigma(self):
-        pass
-
-    def check3sigma(self):
+    def check(self, method_type="3_sigma"):
         '''
         Поиск выброса "3 sigma" согласно RD_6.7.1.5
         ''' 
@@ -110,28 +87,39 @@ class Fragment:
             remove = pd.DataFrame()
             
             for i in range(0,len(criteriums)-1):
+                if method_type=="IQR":
+                    a_q1 = df[criteriums[i]].quantile(q=.25)
+                    a_q3 = df[criteriums[i]].quantile(q=.75)
+                    a_IQR = a_q3-a_q1
+                    
+                    a_corosion_q1 = df[criteriums[i]].quantile(q=.25)
+                    a_corosion_q3 = df[criteriums[i]].quantile(q=.75)
+                    a_corosion_IQR = a_corosion_q3-a_corosion_q1
+
+                    a_crit = (a_q3+1.7*a_IQR)
+                    a_corosion_crit = (a_corosion_q3+1.7*a_corosion_IQR)
+                else:
+                    #Расчёт параметров
+                    a_mean = df[criteriums[i]].mean()
+                    a_corosion_mean = df["Mn-54"].mean()
+                    a_std = df[criteriums[i]].std()
+                    a_corosion_std = df["Mn-54"].std()
+                    a_crit = self.crit_value(a_mean, a_std, len(df))
+                    a_corosion_crit = self.crit_value(a_corosion_mean, a_corosion_std, len(df))
+
+                crit_df = df[(df[criteriums[i]]>a_crit)].reset_index(drop=True)
+                non_hermetic = crit_df[crit_df["Mn-54"]<a_corosion_crit]
+                recheck = crit_df[crit_df["Mn-54"]>=a_corosion_crit]
+
+                if not non_hermetic.empty:
+                    non_hermetic["Criterium"] = criteriums[i] 
+                    self.non_hermetic_df = pd.concat([self.non_hermetic_df,non_hermetic], ignore_index=True)
                 
-                #Расчёт параметров
-                a_mean = df[criteriums[i]].mean()
-                a_corosion_mean = df["Mn-54"].mean()
-                a_std = df[criteriums[i]].std()
-                a_corosion_std = df["Mn-54"].std()
-                a_crit = self.crit_value(a_mean, a_std, len(df))
-                a_corosion_crit = self.crit_value(a_corosion_mean, a_corosion_std, len(df))
+                if not recheck.empty:
+                    recheck["Criterium"] = criteriums[i] 
+                    self.recheck_df = pd.concat([self.recheck_df,recheck], ignore_index=True)
 
-                a_3sigma_df = df[(df[criteriums[i]]>a_crit)].reset_index(drop=True)
-                non_hermetic_df = a_3sigma_df[a_3sigma_df["Mn-54"]<a_corosion_crit]
-                recheck_df = a_3sigma_df[a_3sigma_df["Mn-54"]>=a_corosion_crit]
-
-                if not non_hermetic_df.empty:
-                    non_hermetic_df["Criterium"] = criteriums[i] 
-                    self.non_hermetic_df = pd.concat([self.non_hermetic_df,non_hermetic_df], ignore_index=True)
-                
-                if not recheck_df.empty:
-                    recheck_df["Criterium"] = criteriums[i] 
-                    self.recheck_df = pd.concat([self.recheck_df,recheck_df], ignore_index=True)
-
-                remove = pd.concat([remove,a_3sigma_df["Id1"]], ignore_index=True)
+                remove = pd.concat([remove,crit_df["Id1"]], ignore_index=True)
             
             if remove.empty:
                 break
@@ -142,7 +130,6 @@ class Fragment:
 
         return self.non_hermetic_df, self.recheck_df
         
-
     def stat_tests(self, criterium):
         pass
 
