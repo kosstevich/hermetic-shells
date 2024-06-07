@@ -11,6 +11,126 @@ def open_file():
     filename, _ = QtWidgets.QFileDialog.getOpenFileName(None, 'Выберите входной файл', './', "Table (*.ods)")
     return filename
 
+def error(text):
+    msg = QtWidgets.QMessageBox()
+    msg.setWindowTitle("Ошибка")
+    msg.setText(text)
+    msg.setIcon(QtWidgets.QMessageBox.Warning)
+    msg.exec_()
+
+class IntervalException(Exception):
+    def __init__(self, text):
+        self.txt = text
+
+class DivideWindow(QtWidgets.QWidget):
+
+    def __init__(self,parent,id):
+        super().__init__()
+
+        self.id = id
+        self.parent = parent
+
+        self.layout = QtWidgets.QVBoxLayout()
+        
+        self.label = QtWidgets.QLabel("Введите количество выборок: ")
+        self.input_n = QtWidgets.QLineEdit()
+        self.btn_n = QtWidgets.QPushButton("Готово")
+
+        self.btn_n.clicked.connect(self.add_intervals)
+        
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(self.input_n)
+        layout.addWidget(self.btn_n)
+        
+        widget = QtWidgets.QWidget()
+        widget.setLayout(layout)
+
+        self.layout.addWidget(self.label)
+        self.layout.addWidget(widget)
+
+        self.setLayout(self.layout)
+
+        self.show()
+
+    def add_intervals(self):
+        try:
+            n = int(self.input_n.text())
+            if n<=0:
+                raise IntervalException("Значение должно быть больше 0")
+        except ValueError:
+            error("Значение должно быть числом")
+            self.input_n.setText("")
+            return
+        except IntervalException as e:
+            error(e.txt)
+            self.input_n.setText("")
+            return
+
+        self.i = 0
+        self.intervals_delta = []
+        self.n = n
+
+        self.btn_n.setDisabled(True)
+        
+        self.label_interval = QtWidgets.QLabel("Введите левую и правую границы выборки 1")
+
+        self.line_a = QtWidgets.QLineEdit()
+        self.line_b = QtWidgets.QLineEdit()
+        self.btn_interval = QtWidgets.QPushButton("Готово")
+        self.btn_interval.clicked.connect(self.read_interval)
+        
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(self.line_a)
+        layout.addWidget(self.line_b)
+        layout.addWidget(self.btn_interval)
+
+        widget = QtWidgets.QWidget()
+        widget.setLayout(layout)
+
+        self.layout.addWidget(self.label_interval)
+        self.layout.addWidget(widget)
+
+
+    def read_interval(self):
+        try:
+            a = int(self.line_a.text())
+            b = int(self.line_b.text())
+
+            if a<=0 or b<=0:
+                raise IntervalException("Значение границы должно быть больше 0")
+            if b<a:
+                raise IntervalException("Значение левой границы должно быть меньше, чем значение правой")
+
+        except ValueError:
+            error("Значение должно быть числом")
+            self.line_a.setText("")
+            self.line_b.setText("")
+            return
+        except IntervalException as e:
+            error(e.txt)
+            self.line_a.setText("")
+            self.line_b.setText("")
+            return
+
+        self.intervals_delta.append([a,b])
+
+        self.i+=1
+
+        self.line_a.setText("")
+        self.line_b.setText("")
+
+        if self.i==self.n:
+            self.btn_interval.setDisabled(True)
+            print(self.intervals_delta)
+            self.parent.penal_divided(self.id, self.intervals_delta)
+            self.close()
+
+        self.label_interval.setText("Введите левую и правую границы выборки %s" % (self.i+1))
+        
+class PenalWidget(QtWidgets.QWidget):
+    def __init__():
+        pass       
+
 class PlotData(FigureCanvasQTAgg): 
     '''
     Виджет для отрисовки графиков, использующий matplotlib
@@ -23,18 +143,15 @@ class PlotData(FigureCanvasQTAgg):
 
         super(PlotData, self).__init__(self.fig)
     
-    def draw_plot(self, df, axe_x="Id1", axe_y="I-131", type = "barplot", title=None):
+    def draw_plot(self, df, axe_x="Id1", axe_y="I-131", type = "barplot", name=None):
         self.axes.cla()
         getattr(sns,type)(data=df, x=axe_x, y=axe_y, ax=self.axes)
-        plt.title(label=title, fontsize=16)
-
-class PenalWidget(QtWidgets.QWidget):
-    def __init__():
-        pass
+        plt.title(label=("Пенал %s" % name), fontsize=16)
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, model, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
+        self.setWindowTitle("Hermetic shells")
         #self.resize(1200,900)
         self.model=model
 
@@ -50,36 +167,59 @@ class MainWindow(QtWidgets.QMainWindow):
         for i in range(0,len(self.model.data.penals_id)):
             btn_name = "Пенал %s" % self.model.data.penals_id[i]
             penal_btn = QtWidgets.QPushButton(btn_name)
-            penal_btn.released.connect(lambda id=i, name=btn_name: self.change_penal(title = name, id = id))
+            penal_btn.released.connect(lambda id=i, 
+                                            name=self.model.data.penals_id[i]: self.change_penal(name = name, id = id))
             layout.addWidget(penal_btn)
-
+        self.penal_menu.setLayout(layout)
+ 
         self.criterium = QtWidgets.QComboBox()
         self.criterium.addItems(["I-131", "Cs-134", "Cs-137", "Cs-136", "Xe-133","Mn-54"])
         self.criterium.activated[str].connect(lambda axe_y=str: self.update_plot(axe_y=axe_y))
 
-        layout.addWidget(self.criterium)
-        self.penal_menu.setLayout(layout)
-
-        toolbar = NavigationToolbar(self.sc, self)
-
-        self.layout = QtWidgets.QVBoxLayout()
+        self.divide_btn = QtWidgets.QPushButton("Разделить на выборки")
+        #self.divide_btn.setDisabled(True)
+        self.divide_btn.clicked.connect(self.open_divide_window)
         
-        self.layout.addWidget(toolbar)
-        self.layout.addWidget(self.sc)
-        self.layout.addWidget(self.penal_menu)
+        self.tool = NavigationToolbar(self.sc, self)
 
-        self.widget = QtWidgets.QWidget()
-        self.widget.setLayout(self.layout)
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(self.tool)
+        layout.addWidget(self.criterium)
+        layout.addWidget(self.divide_btn)
+        
+        self.toolbar = QtWidgets.QWidget()
+        self.toolbar.setLayout(layout)
+        
+        layout = QtWidgets.QVBoxLayout()
+        
+        layout.addWidget(self.toolbar)
+        layout.addWidget(self.sc)
+        layout.addWidget(self.penal_menu)
+        
+        centralWidget = QtWidgets.QWidget()
+        centralWidget.setLayout(layout)
 
-        self.setCentralWidget(self.widget)
+        #self.setLayout(self.layout)
 
-    def change_penal(self, title, id):
-        self.title = title
+        self.setCentralWidget(centralWidget)
+
+        self.show()
+
+    def open_divide_window(self):
+        self.div = DivideWindow(self, self.id)
+
+    def penal_divided(self, id, intervals_delta):
+        self.model.control(id, intervals_delta)
+
+    def change_penal(self, name, id):
+        self.name = name
         self.id = id
         self.update_plot()
 
+        #self.divide_btn.setDisabled(False)
+
     def update_plot(self, axe_x="Id1", axe_y=None, type = "barplot"):
         if axe_y: self.axe_y = axe_y
-        if self.title != "":
-            self.sc.draw_plot(self.model.penals[self.id].data, axe_x=axe_x, axe_y=self.axe_y, type=type, title=self.title)
+        if self.name != "":
+            self.sc.draw_plot(self.model.penals[self.id].data, axe_x=axe_x, axe_y=self.axe_y, type=type, name = self.name)
             self.sc.draw()

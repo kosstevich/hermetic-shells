@@ -30,8 +30,8 @@ class Penal:
         print("Проверка выборок:")
         for i in range(0,len(self.fragments)):
             print("Выборка %d:" % (i+1))
-            #non_hermetic_df, recheck_df = self.fragments[i].check()
-            non_hermetic_df, recheck_df = self.fragments[i].check("IQR")
+            non_hermetic_df, recheck_df = self.fragments[i].check()
+            #non_hermetic_df, recheck_df = self.fragments[i].check("IQR")
 
             if not non_hermetic_df.empty:
                 print("Негерметичные ТВС")
@@ -42,6 +42,7 @@ class Penal:
                 print(recheck_df)
 
             print()
+        return self.fragments
     
     def check_distribution(self, criterium):
         pass

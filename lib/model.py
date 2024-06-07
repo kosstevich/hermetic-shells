@@ -22,17 +22,17 @@ class Model:
             print("Значения для ТВС:")
             print(self.penals[i].cassetes)
 
-    def control(self, id): #TODO many penals
+    def control(self, id, intervals_delta): #TODO many penals
+        if not intervals_delta:
+            intervals_delta = self._get_intervals(self.data.penals_id[id])
 
-        intervals_delta = self._get_intervals(self.data.penals_id[id])
-        #intervals_delta = [[1,40],[40,102]]
         self.penals_intervals[int(self.data.penals_id[id])] = intervals_delta
         
         print("Пенал %d:" % self.data.penals_id[id])
         self.penals[id].divide_into_fragments(intervals_delta)
 
-        #self.penals[i].check_distribution()
-        self.penals[id].analyze()
+        fragments = self.penals[id].analyze()
+        return fragments
 
     def get_penals(self):
         return self.penals

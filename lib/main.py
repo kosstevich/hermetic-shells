@@ -15,7 +15,6 @@ if __name__ == "__main__":
     # model.control(1)
     #model.control(0)
     main_window = MainWindow(model)
-    main_window.show()
 
     app.exec_()
 
