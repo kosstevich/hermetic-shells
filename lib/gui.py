@@ -18,21 +18,40 @@ def error(text):
     msg.setIcon(QtWidgets.QMessageBox.Warning)
     msg.exec_()
 
-class IntervalException(Exception):
-    def __init__(self, text):
-        self.txt = text
+class PlotData(FigureCanvasQTAgg): 
+    '''
+    Виджет для отрисовки графиков, использующий matplotlib
+    '''
+    def __init__(self, parent=None):
+        sns.set(style="whitegrid", context="paper")
+        self.fig = plt.figure(figsize=(15, 10))
+        self.axes = self.fig.add_subplot(111)
+        #self.draw_plot(df, axe_x, axe_y, type, title)
+
+        super(PlotData, self).__init__(self.fig)
+    
+    def draw_plot(self, df, axe_x="Id1", axe_y="I-131", type = "barplot", name=None):
+        self.axes.cla()
+        getattr(sns,type)(data=df, x=axe_x, y=axe_y, ax=self.axes)
+        plt.title(label= name, fontsize=16)
 
 class DivideWindow(QtWidgets.QWidget):
 
+    class IntervalException(Exception):
+        def __init__(self, text):
+            self.txt = text
+
     def __init__(self,parent,id):
         super().__init__()
+
+        self.setWindowTitle("Выборки")
 
         self.id = id
         self.parent = parent
 
         self.layout = QtWidgets.QVBoxLayout()
         
-        self.label = QtWidgets.QLabel("Введите количество выборок: ")
+        self.label = QtWidgets.QLabel("Введите количество выборок для пенала %s" % self.parent.name)
         self.input_n = QtWidgets.QLineEdit()
         self.btn_n = QtWidgets.QPushButton("Готово")
 
@@ -51,6 +70,9 @@ class DivideWindow(QtWidgets.QWidget):
         self.setLayout(self.layout)
 
         self.show()
+
+    def closeEvent(self, event):
+        self.parent.divide_btn.setDisabled(False)
 
     def add_intervals(self):
         try:
@@ -127,37 +149,77 @@ class DivideWindow(QtWidgets.QWidget):
 
         self.label_interval.setText("Введите левую и правую границы выборки %s" % (self.i+1))
         
-class PenalWidget(QtWidgets.QWidget):
-    def __init__():
-        pass       
+class PenalWindow(QtWidgets.QMainWindow):
+    def __init__(self, parent, penal, name, id, intervals_delta):
+        super(PenalWindow, self).__init__(parent)
 
-class PlotData(FigureCanvasQTAgg): 
-    '''
-    Виджет для отрисовки графиков, использующий matplotlib
-    '''
-    def __init__(self, parent=None):
-        sns.set(style="whitegrid", context="paper")
-        self.fig = plt.figure(figsize=(15, 10))
-        self.axes = self.fig.add_subplot(111)
-        #self.draw_plot(df, axe_x, axe_y, type, title)
+        self.penal = penal
+        self.penal.divide_into_fragments(intervals_delta)
+        self.penal_name = name
+        self.penal_id = id
+        self.axe_y="I-131"
 
-        super(PlotData, self).__init__(self.fig)
-    
-    def draw_plot(self, df, axe_x="Id1", axe_y="I-131", type = "barplot", name=None):
-        self.axes.cla()
-        getattr(sns,type)(data=df, x=axe_x, y=axe_y, ax=self.axes)
-        plt.title(label=("Пенал %s" % name), fontsize=16)
+        self.fragment_id = 0
+
+        self.setWindowTitle("Пенал %s" % self.penal_name)
+        
+        self.sc = PlotData(self)
+        self.tool = NavigationToolbar(self.sc, self)
+
+        layout = QtWidgets.QHBoxLayout()
+        self.fragment_menu = QtWidgets.QWidget()
+
+        for i in range(0,len(self.penal.fragments)):
+            btn_name = "Выборка %s" % (i+1)
+            penal_btn = QtWidgets.QPushButton(btn_name)
+            penal_btn.released.connect(lambda id=i: self.change_fragment(id = id))
+            layout.addWidget(penal_btn)
+        self.fragment_menu.setLayout(layout)
+        
+        self.criterium = QtWidgets.QComboBox()
+        self.criterium.addItems(["I-131", "Cs-134", "Cs-137", "Cs-136", "Xe-133","Mn-54"])
+        self.criterium.activated[str].connect(lambda axe_y=str: self.update_plot(axe_y=axe_y))
+
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(self.tool)
+        layout.addWidget(self.criterium)
+
+        self.toolbar = QtWidgets.QWidget()
+        self.toolbar.setLayout(layout)
+
+        layout = QtWidgets.QVBoxLayout()
+        
+        layout.addWidget(self.toolbar)
+        layout.addWidget(self.sc)
+        layout.addWidget(self.fragment_menu)
+        
+        centralWidget = QtWidgets.QWidget()
+        centralWidget.setLayout(layout)
+
+        self.setCentralWidget(centralWidget)
+
+    def change_fragment(self, id):
+        self.fragment_id = id
+        self.update_plot()
+        
+
+    def update_plot(self, axe_x="Id1", axe_y=None, type = "barplot"):
+        if axe_y: self.axe_y = axe_y
+        self.sc.draw_plot(self.penal.fragments[self.fragment_id].df, axe_x=axe_x, axe_y=self.axe_y, type=type, name = ("Выборка %s" % (self.fragment_id+1)))
+        self.sc.draw()        
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, model, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self.setWindowTitle("Hermetic shells")
-        #self.resize(1200,900)
+        self.setWindowTitle("Анализ данных КГО")
+
         self.model=model
 
         self.id = 0
-        self.title = ""
+        self.name = ""
         self.axe_y = "I-131"
+
+        self.penal_title = QtWidgets.QLabel("Выбран пенал: -")
 
         self.sc = PlotData(self)
 
@@ -179,11 +241,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.divide_btn = QtWidgets.QPushButton("Разделить на выборки")
         #self.divide_btn.setDisabled(True)
         self.divide_btn.clicked.connect(self.open_divide_window)
+        self.divide_btn.setDisabled(True)
         
         self.tool = NavigationToolbar(self.sc, self)
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.tool)
+        layout.addWidget(self.penal_title)
         layout.addWidget(self.criterium)
         layout.addWidget(self.divide_btn)
         
@@ -199,27 +263,30 @@ class MainWindow(QtWidgets.QMainWindow):
         centralWidget = QtWidgets.QWidget()
         centralWidget.setLayout(layout)
 
-        #self.setLayout(self.layout)
-
         self.setCentralWidget(centralWidget)
 
         self.show()
 
     def open_divide_window(self):
+        self.divide_btn.setDisabled(True)
         self.div = DivideWindow(self, self.id)
 
     def penal_divided(self, id, intervals_delta):
-        self.model.control(id, intervals_delta)
+        penal_widget = PenalWindow(self, self.model.penals[id], self.name, self.id, intervals_delta)
+        penal_widget.show()
+        #self.model.control(id, intervals_delta)
 
     def change_penal(self, name, id):
+        self.divide_btn.setDisabled(False)
         self.name = name
         self.id = id
         self.update_plot()
+        self.penal_title.setText("Выбран пенал: %s" % self.name)
 
         #self.divide_btn.setDisabled(False)
 
     def update_plot(self, axe_x="Id1", axe_y=None, type = "barplot"):
         if axe_y: self.axe_y = axe_y
         if self.name != "":
-            self.sc.draw_plot(self.model.penals[self.id].data, axe_x=axe_x, axe_y=self.axe_y, type=type, name = self.name)
+            self.sc.draw_plot(self.model.penals[self.id].data, axe_x=axe_x, axe_y=self.axe_y, type=type, name = ("Пенал %s" % self.name))
             self.sc.draw()

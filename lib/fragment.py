@@ -17,6 +17,7 @@ class Penal:
         self.id = id
 
     def divide_into_fragments(self, intervals_delta:list): # 2-dimensional list of periods, e.g. [[a,b],[b,c]]
+        self.fragments = []
         for i in range(0,len(intervals_delta)):
             a = intervals_delta[i][0]
             b = intervals_delta[i][1]
