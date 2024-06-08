@@ -28,22 +28,31 @@ class Penal:
 
 
     def analyze(self):
+        self.output_data = {}
+
         print("Проверка выборок:")
         for i in range(0,len(self.fragments)):
             print("Выборка %d:" % (i+1))
             non_hermetic_df, recheck_df = self.fragments[i].check()
             #non_hermetic_df, recheck_df = self.fragments[i].check("IQR")
 
+            self.output_data[i] = [non_hermetic_df, recheck_df]
+
             if not non_hermetic_df.empty:
+                ext_df = self.fragments[i].get_parameters_df()
+                self.output_data[i].append(ext_df)
                 print("Негерметичные ТВС")
                 print(non_hermetic_df)
+                
 
             if not recheck_df.empty:
+                ext_df = self.fragments[i].get_parameters_df()
+                self.output_data[i].append(ext_df)
                 print("ТВС для повторной проверки:")
                 print(recheck_df)
 
             print()
-        return self.fragments
+        return self.output_data
     
     def check_distribution(self, criterium):
         pass
@@ -81,7 +90,7 @@ class Fragment:
         ''' 
         df = self.df
         self.parameters = self.calc_3sigma_params(df)
-        print(pd.DataFrame.from_dict(self.parameters, orient="Index", columns=criteriums))
+        #print(pd.DataFrame.from_dict(self.parameters, orient="Index", columns=criteriums))
         self.non_hermetic_df = pd.DataFrame()
         self.recheck_df=pd.DataFrame()
         
@@ -131,6 +140,10 @@ class Fragment:
                 df = df.reset_index(drop=True)
 
         return self.non_hermetic_df, self.recheck_df
+
+    def get_parameters_df(self):
+        df = pd.DataFrame.from_dict(self.parameters, orient="Index", columns=criteriums)
+        return df
         
     def stat_tests(self, criterium):
         pass

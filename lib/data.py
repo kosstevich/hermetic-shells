@@ -6,11 +6,12 @@ class Data:
     Класс предварительной обработки данных
     Используется для получения и очистки данных из таблицы .ods 
     '''
-    def __init__(self, filename:str, sheet_name:str = "Лист1"):
+    def __init__(self, filename:str):
         pd.set_option('display.max_rows', None)
+        pd.options.display.float_format ='{:,.8f}'.format
         #pd.set_option('future.no_silent_downcasting', True)
         try:
-            self.input_data, self.penals, self.penals_id, self.cassetes = self._clear_data(pd.read_excel(filename, sheet_name))
+            self.input_data, self.penals, self.penals_id, self.cassetes = self._clear_data(pd.read_excel(filename))
             #print(self.input_data)
             #print(self.cassetes)
             #print(self.penals)
@@ -43,8 +44,12 @@ class Data:
         df["IdPenal"]=df["IdPenal"].fillna(0.0).astype(int)
         df["Id2"]=df["Id2"].fillna(0.0).astype(int)
 
-        repeat = df.loc[df["Id1"]=="Повторное КГО"].index[0]
-        df = df.iloc[:repeat]
+        #repeat = df.loc[df["Id1"]=="Повторное КГО"].index[0]
+        #df = df.iloc[:repeat]
+        df = df.dropna(subset=["Id1"])
+        df = df.reset_index(drop=True)
+        df["Id1"]=df["Id1"].astype(int)
+
         input_data = df
 
         penals_id = df["IdPenal"].unique()
@@ -59,4 +64,8 @@ class Data:
         
         cassetes = input_data.dropna(subset=["Id1"])
         cassetes = cassetes.reset_index(drop=True)
+        cassetes["Id1"]=cassetes["Id1"].astype(int)
+
+        print(cassetes)
+
         return input_data, penals, penals_id, cassetes

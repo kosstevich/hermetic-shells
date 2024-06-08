@@ -10,7 +10,7 @@ if __name__ == "__main__":
     
     filename = open_file()
 
-    model = Model()
+    model = Model(filename)
     # model.control(0)
     # model.control(1)
     #model.control(0)

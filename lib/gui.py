@@ -5,7 +5,10 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg,NavigationToolb
 from matplotlib.figure import Figure
 import seaborn as sns
 import matplotlib.pyplot as plt
+import pandas as pd
 import random
+
+criteriums = ["I-131","Cs-134","Cs-137","Cs-136","Xe-133", "Mn-54"]
 
 def open_file():
     filename, _ = QtWidgets.QFileDialog.getOpenFileName(None, 'Выберите входной файл', './', "Table (*.ods)")
@@ -159,11 +162,21 @@ class PenalWindow(QtWidgets.QMainWindow):
         self.penal_id = id
         self.axe_y="I-131"
 
+        self.selected_stack_id = 0
+
         self.fragment_id = 0
 
         self.setWindowTitle("Пенал %s" % self.penal_name)
         
+        self.stack = QtWidgets.QStackedWidget()
+        
         self.sc = PlotData(self)
+        self.table = QtWidgets.QTableWidget()
+
+        self.stack.addWidget(self.sc)
+        self.stack.addWidget(self.table)
+        self.stack.setCurrentIndex(self.selected_stack_id)
+        
         self.tool = NavigationToolbar(self.sc, self)
 
         layout = QtWidgets.QHBoxLayout()
@@ -177,11 +190,19 @@ class PenalWindow(QtWidgets.QMainWindow):
         self.fragment_menu.setLayout(layout)
         
         self.criterium = QtWidgets.QComboBox()
-        self.criterium.addItems(["I-131", "Cs-134", "Cs-137", "Cs-136", "Xe-133","Mn-54"])
+        self.criterium.addItems(criteriums)
         self.criterium.activated[str].connect(lambda axe_y=str: self.update_plot(axe_y=axe_y))
+
+        self.analyze_btn = QtWidgets.QPushButton("Анализ")
+        self.analyze_btn.clicked.connect(self.analyze)
+        self.distribution_btn = QtWidgets.QPushButton("Проверка выборки")
+        self.export_btn = QtWidgets.QPushButton("Экспорт")
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.tool)
+        layout.addWidget(self.analyze_btn)
+        layout.addWidget(self.distribution_btn)
+        layout.addWidget(self.export_btn)
         layout.addWidget(self.criterium)
 
         self.toolbar = QtWidgets.QWidget()
@@ -190,7 +211,7 @@ class PenalWindow(QtWidgets.QMainWindow):
         layout = QtWidgets.QVBoxLayout()
         
         layout.addWidget(self.toolbar)
-        layout.addWidget(self.sc)
+        layout.addWidget(self.stack)
         layout.addWidget(self.fragment_menu)
         
         centralWidget = QtWidgets.QWidget()
@@ -198,11 +219,100 @@ class PenalWindow(QtWidgets.QMainWindow):
 
         self.setCentralWidget(centralWidget)
 
+    def analyze(self):
+        self.analyze_btn.setDisabled(True)
+        self.selected_stack_id = 1
+        self.stack.setCurrentIndex(self.selected_stack_id)
+        self.output = self.penal.analyze()
+        self.update_table()
+        #print(output)
+
     def change_fragment(self, id):
         self.fragment_id = id
-        self.update_plot()
-        
+        if self.selected_stack_id == 0:
+            self.update_plot()
+        else:
+            self.update_table()
 
+    def update_table(self):
+        self.table.setRowCount(0)
+        self.table.setColumnCount(0)
+
+        data = self.output[self.fragment_id]
+
+        if len(data) == 3:
+            non_hermetic_df = data[0]
+            recheck_df = data[1]
+            parameters = data[2]
+
+            if not non_hermetic_df.empty: self.table.setColumnCount(len(non_hermetic_df.columns.values))
+            if not recheck_df.empty: self.table.setColumnCount(len(recheck_df.columns.values))
+            
+            self.table.setRowCount(self.table.rowCount() + 1)
+            self.table.setItem(0, 0, QtWidgets.QTableWidgetItem("Выборка %s"%(self.fragment_id+1)))
+
+            self.table.setRowCount(self.table.rowCount() + 1)
+            self.table.setItem(1, 0, QtWidgets.QTableWidgetItem("Расширенная информация"))
+
+            start_row = self.table.rowCount()
+            
+            self.table.setRowCount(self.table.rowCount() + 1)
+            header = parameters.columns.values
+
+            for i in range(0,len(header)):
+                self.table.setItem(start_row, (i+1), QtWidgets.QTableWidgetItem(str(header[i])))
+
+            start_row = self.table.rowCount()
+
+            for i in range(0,len(parameters)):
+                row = parameters.iloc[i]
+                self.table.setRowCount(self.table.rowCount() + 1)
+                self.table.setItem((start_row+i), 0, QtWidgets.QTableWidgetItem(parameters.index.to_list()[i]))
+
+                for j in range(0,len(row)):
+                    self.table.setItem((start_row+i), j+1, QtWidgets.QTableWidgetItem(str(row.loc[row.index.to_list()[j]])))
+
+            start_row = self.table.rowCount()
+
+            if not non_hermetic_df.empty:
+                header = non_hermetic_df.columns.values
+                self.table.setRowCount(start_row+1)
+                self.table.setItem(start_row, 0, QtWidgets.QTableWidgetItem("Негерметичные ТВС:"))
+               
+                self.table.setRowCount(start_row+2)
+                for i in range(0,len(header)):
+                    self.table.setItem((start_row+1), i, QtWidgets.QTableWidgetItem(str(header[i])))
+
+                start_row += 2
+
+                self.print_df(non_hermetic_df, start_row)
+            
+            start_row = self.table.rowCount()
+
+            if not recheck_df.empty:
+                header = recheck_df.columns.values
+                self.table.setRowCount(start_row+1)
+                self.table.setItem(start_row, 0, QtWidgets.QTableWidgetItem("ТВС для повторной проверки:"))
+                
+                self.table.setRowCount(start_row+2)
+                for i in range(0,len(header)):
+                    self.table.setItem((start_row+1), i, QtWidgets.QTableWidgetItem(str(header[i])))
+
+                start_row += 2
+
+                self.print_df(recheck_df, start_row)
+
+        else:
+            self.table.setColumnCount(1)
+            self.table.setRowCount(self.table.rowCount() + 1)
+            self.table.setItem(0, 0, QtWidgets.QTableWidgetItem("Выборка %s"%(self.fragment_id+1)))
+
+    def print_df(self, df, start_row):
+        for i, row in df.iterrows():
+            self.table.setRowCount(self.table.rowCount() + 1)
+            for j in range(0, len(row)):
+                    self.table.setItem((start_row+i), j, QtWidgets.QTableWidgetItem(str(row.iloc[j])))
+        
     def update_plot(self, axe_x="Id1", axe_y=None, type = "barplot"):
         if axe_y: self.axe_y = axe_y
         self.sc.draw_plot(self.penal.fragments[self.fragment_id].df, axe_x=axe_x, axe_y=self.axe_y, type=type, name = ("Выборка %s" % (self.fragment_id+1)))
@@ -235,7 +345,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.penal_menu.setLayout(layout)
  
         self.criterium = QtWidgets.QComboBox()
-        self.criterium.addItems(["I-131", "Cs-134", "Cs-137", "Cs-136", "Xe-133","Mn-54"])
+        self.criterium.addItems(criteriums)
         self.criterium.activated[str].connect(lambda axe_y=str: self.update_plot(axe_y=axe_y))
 
         self.divide_btn = QtWidgets.QPushButton("Разделить на выборки")
