@@ -161,6 +161,7 @@ class PenalWindow(QtWidgets.QMainWindow):
         self.penal_name = name
         self.penal_id = id
         self.axe_y="I-131"
+        self.parent = parent
 
         self.selected_stack_id = 0
 
@@ -197,6 +198,7 @@ class PenalWindow(QtWidgets.QMainWindow):
         self.analyze_btn.clicked.connect(self.analyze)
         self.distribution_btn = QtWidgets.QPushButton("Проверка выборки")
         self.export_btn = QtWidgets.QPushButton("Экспорт")
+        self.export_btn.clicked.connect(self.export)
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.tool)
@@ -233,6 +235,10 @@ class PenalWindow(QtWidgets.QMainWindow):
             self.update_plot()
         else:
             self.update_table()
+
+    def export(self):
+        self.parent.model.export_data()
+        #self.penal.export_data()
 
     def update_table(self):
         self.table.setRowCount(0)

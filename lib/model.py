@@ -3,6 +3,7 @@ from fragment import Penal
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+import pandas as pd
 
 class Model:
     '''
@@ -45,7 +46,11 @@ class Model:
             b = int(input("Введите правую границу интервала %d: " % (i+1)))
             intervals_delta.append([a,b])
         print()
-        return intervals_delta 
-    
-    def recheck(self): #TODO
-        pass
+        return intervals_delta
+
+    def export_data(self, filename="output.ods", datetime_format='DD-MM-YYYY HH:MM:SS'):
+        with pd.ExcelWriter(path=filename, mode='w') as writer:
+            sheet = "Исходные данные"
+            self.data.input_data.to_excel(excel_writer = writer, sheet_name = sheet, index=False)
+            for i in range(0,len(self.penals)):
+                self.penals[i].export_data(filename, writer)

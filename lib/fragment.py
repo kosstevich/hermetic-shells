@@ -53,6 +53,28 @@ class Penal:
 
             print()
         return self.output_data
+
+    def export_data(self, filename="output.ods", writer = pd.ExcelWriter(path="otput.ods", datetime_format='DD-MM-YYYY HH:MM:SS')):
+        #with pd.ExcelWriter(path=filename, datetime_format='DD-MM-YYYY HH:MM:SS') as writer:  
+        sheet = "МП%s" % self.id
+        self.data.to_excel(excel_writer = writer, sheet_name = sheet, index=False)
+
+        for i in range(0, len(self.fragments)):
+            sheet = "МП%s-%s" % (self.id, (i+1))
+
+            parameters = self.fragments[i].get_parameters_df()
+            parameters.to_excel(excel_writer = writer, sheet_name = sheet)
+
+            self.fragments[i].df.to_excel(excel_writer = writer, sheet_name = sheet, index=False)
+
+            if not self.fragments[i].non_hermetic_df.empty:
+                df = pd.DataFrame(data = ["Негерметичные ТВС:"])
+                df.to_excel(excel_writer=writer,sheet_name=sheet, index=False)
+                self.fragments[i].non_hermetic_df.to_excel(excel_writer=writer, sheet_name=sheet, index=False)
+            if not self.fragments[i].recheck_df.empty:
+                df = pd.DataFrame(data = ["ТВС для повторной проверки:"])
+                df.to_excel(excel_writer=writer,sheet_name=sheet, index=False)
+                self.fragments[i].recheck_df.to_excel(excel_writer=writer, sheet_name=sheet, index=False)
     
     def check_distribution(self, criterium):
         pass
