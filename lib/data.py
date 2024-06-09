@@ -12,9 +12,6 @@ class Data:
         #pd.set_option('future.no_silent_downcasting', True)
         try:
             self.input_data, self.penals, self.penals_id, self.cassetes = self._clear_data(pd.read_excel(filename))
-            #print(self.input_data)
-            #print(self.cassetes)
-            #print(self.penals)
         except FileNotFoundError:
             print("Указанный файл не существует")
         except PermissionError:

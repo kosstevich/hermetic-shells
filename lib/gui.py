@@ -11,7 +11,7 @@ import random
 criteriums = ["I-131","Cs-134","Cs-137","Cs-136","Xe-133", "Mn-54"]
 
 def open_file():
-    filename, _ = QtWidgets.QFileDialog.getOpenFileName(None, 'Выберите входной файл', './', "Table (*.ods)")
+    filename, _ = QtWidgets.QFileDialog.getOpenFileName(None, 'Выберите файл', './', "Table (*.ods)")
     return filename
 
 def error(text):
@@ -146,12 +146,68 @@ class DivideWindow(QtWidgets.QWidget):
 
         if self.i==self.n:
             self.btn_interval.setDisabled(True)
-            print(self.intervals_delta)
             self.parent.penal_divided(self.id, self.intervals_delta)
             self.close()
 
         self.label_interval.setText("Введите левую и правую границы выборки %s" % (self.i+1))
+
+class TestsWindow(QtWidgets.QMainWindow):
+    def __init__(self, parent, criterium, id):
+        super(TestsWindow, self).__init__(parent)
+
+        self.parent = parent
+        self.setWindowTitle("Результаты тестов для выборки %s" % ((id+1)))
+
+        self.parent.distribution_btn.setDisabled(True)
+        self.show()
+
+        vert_layout = QtWidgets.QVBoxLayout()
         
+        tests_result = parent.penal.check_distribution(criterium, id)
+
+        layout = QtWidgets.QHBoxLayout()
+        widget = QtWidgets.QWidget()
+
+        mannwhitney = QtWidgets.QLabel("Тест Манна-Уитни: ")
+        mannwhitney_result = QtWidgets.QLabel(str(tests_result["Тест Манна-Уитни"]))
+        
+        layout.addWidget(mannwhitney)
+        layout.addWidget(mannwhitney_result)
+        widget.setLayout(layout)
+        vert_layout.addWidget(widget)
+
+        layout = QtWidgets.QHBoxLayout()
+        widget = QtWidgets.QWidget()
+
+        shapiro = QtWidgets.QLabel("Тест Шапиро-Уилка: ")
+        shapiro_result = QtWidgets.QLabel(str(tests_result["Тест Шапиро-Уилка"]))
+
+        layout.addWidget(shapiro)
+        layout.addWidget(shapiro_result)
+        widget.setLayout(layout)
+        vert_layout.addWidget(widget)
+
+        layout = QtWidgets.QHBoxLayout()
+        widget = QtWidgets.QWidget()
+        
+        t = QtWidgets.QLabel("Двухвыборочный тест Стьюдента: ")
+        t_result = QtWidgets.QLabel(str(tests_result["Двухвыборочный тест Стьюдента"]))
+
+        layout.addWidget(t)
+        layout.addWidget(t_result)
+        widget.setLayout(layout)
+        vert_layout.addWidget(widget)
+
+        #table = QtWidgets.QTableWidget()
+
+        centralWidget = QtWidgets.QWidget()
+        centralWidget.setLayout(vert_layout)
+
+        self.setCentralWidget(centralWidget)
+
+    def closeEvent(self, event):
+        self.parent.distribution_btn.setDisabled(False)
+
 class PenalWindow(QtWidgets.QMainWindow):
     def __init__(self, parent, penal, name, id, intervals_delta):
         super(PenalWindow, self).__init__(parent)
@@ -162,9 +218,7 @@ class PenalWindow(QtWidgets.QMainWindow):
         self.penal_id = id
         self.axe_y="I-131"
         self.parent = parent
-
         self.selected_stack_id = 0
-
         self.fragment_id = 0
 
         self.setWindowTitle("Пенал %s" % self.penal_name)
@@ -197,11 +251,18 @@ class PenalWindow(QtWidgets.QMainWindow):
         self.analyze_btn = QtWidgets.QPushButton("Анализ")
         self.analyze_btn.clicked.connect(self.analyze)
         self.distribution_btn = QtWidgets.QPushButton("Проверка выборки")
+        self.distribution_btn.clicked.connect(self.tests)
         self.export_btn = QtWidgets.QPushButton("Экспорт")
         self.export_btn.clicked.connect(self.export)
+        self.export_btn.setDisabled(True)
+
+        self.fragment_label = QtWidgets.QLabel("Выбрана выборка -")
+        self.criterium_label = QtWidgets.QLabel("Выбран критерий %s" % self.axe_y)
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.tool)
+        layout.addWidget(self.fragment_label)
+        layout.addWidget(self.criterium_label)
         layout.addWidget(self.analyze_btn)
         layout.addWidget(self.distribution_btn)
         layout.addWidget(self.export_btn)
@@ -223,6 +284,7 @@ class PenalWindow(QtWidgets.QMainWindow):
 
     def analyze(self):
         self.analyze_btn.setDisabled(True)
+        self.export_btn.setDisabled(False)
         self.selected_stack_id = 1
         self.stack.setCurrentIndex(self.selected_stack_id)
         self.output = self.penal.analyze()
@@ -231,6 +293,7 @@ class PenalWindow(QtWidgets.QMainWindow):
 
     def change_fragment(self, id):
         self.fragment_id = id
+        self.fragment_label.setText("Выбрана выборка %s" % (self.fragment_id+1))
         if self.selected_stack_id == 0:
             self.update_plot()
         else:
@@ -238,7 +301,13 @@ class PenalWindow(QtWidgets.QMainWindow):
 
     def export(self):
         self.parent.model.export_data()
-        #self.penal.export_data()
+        msg = QtWidgets.QMessageBox()
+        msg.setWindowTitle("Уведомление")
+        msg.setText("Сохранён файл ./output.ods")
+        msg.exec_()
+
+    def tests(self):
+        tests_window = TestsWindow(self, self.axe_y, self.fragment_id)
 
     def update_table(self):
         self.table.setRowCount(0)
@@ -320,7 +389,9 @@ class PenalWindow(QtWidgets.QMainWindow):
                     self.table.setItem((start_row+i), j, QtWidgets.QTableWidgetItem(str(row.iloc[j])))
         
     def update_plot(self, axe_x="Id1", axe_y=None, type = "barplot"):
-        if axe_y: self.axe_y = axe_y
+        if axe_y: 
+            self.axe_y = axe_y
+            self.criterium_label.setText("Выбран критерий %s" % self.axe_y)
         self.sc.draw_plot(self.penal.fragments[self.fragment_id].df, axe_x=axe_x, axe_y=self.axe_y, type=type, name = ("Выборка %s" % (self.fragment_id+1)))
         self.sc.draw()        
 
@@ -390,7 +461,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def penal_divided(self, id, intervals_delta):
         penal_widget = PenalWindow(self, self.model.penals[id], self.name, self.id, intervals_delta)
         penal_widget.show()
-        #self.model.control(id, intervals_delta)
 
     def change_penal(self, name, id):
         self.divide_btn.setDisabled(False)
@@ -398,8 +468,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.id = id
         self.update_plot()
         self.penal_title.setText("Выбран пенал: %s" % self.name)
-
-        #self.divide_btn.setDisabled(False)
 
     def update_plot(self, axe_x="Id1", axe_y=None, type = "barplot"):
         if axe_y: self.axe_y = axe_y

@@ -96,14 +96,13 @@ class Fragment:
 
     def shapiro_test(self, criterium):
         statistic, pvalue = stats.shapiro(self.df[criterium])
-        # print("p-value: %s" % pvalue)
 
-        return (pvalue, None)
+        return (format(pvalue, '.3f'))
 
     def t_test(self, criterium):
         pvalues = []
 
-        for i in range(0,1000):
+        for i in range(0,100):
             n1, n2 = random_generate(self.df, criterium)
 
             statistic, pvalue = stats.ttest_ind(a=n1, b=n2, equal_var=True)
@@ -114,16 +113,12 @@ class Fragment:
         pvalue = pd.Series(pvalues).mean()
         confidence = stats.norm.interval(confidence=0.95, loc=np.mean(pvalues), scale=stats.sem(pvalues))
 
-        # print("p-value: %s" % pvalue)
-        # print("Доверительный интервал для p-value")
-        # print(confidence)
-
-        return confidence
+        return (format(confidence[0], '.3f'), format(confidence[1], '.3f'))
 
     def mannwhitney_test(self, criterium):
         pvalues = []
         
-        for i in range(0,1000):
+        for i in range(0,100):
             n1, n2 = random_generate(self.df, criterium)
 
             statistic, pvalue = stats.mannwhitneyu(n1, n2, alternative='two-sided')
@@ -134,12 +129,8 @@ class Fragment:
         pvalue = pd.Series(pvalues).mean()
         confidence = stats.norm.interval(confidence=0.95, loc=np.mean(pvalues), scale=stats.sem(pvalues))
 
-        # print("p-value: %s" % pvalue)
-        # print("Доверительный интервал для p-value")
-        # print(confidence)
-
-        return confidence
-
+        return (format(confidence[0], '.3f'), format(confidence[1], '.3f'))
+        
     def calc_3sigma_params(self, df):
         parameters = {
             "Activity_mean" : [], 
@@ -240,10 +231,5 @@ def random_generate(df, criterium):
 
     while len(n1) == 0 or len(n2) == 0:
         n1, n2 = random_generate(df, criterium)
-
-    # print("n1:")
-    # print(n1)
-    # print("n2")
-    # print(n2)
 
     return n1,n2

@@ -11,9 +11,6 @@ class Model:
     '''
     def __init__(self, filename = "../data/sample-data.ods"):
         self.data = Data(filename)
-
-        #plt.hist(self.data.cassetes["I-131"], bins=200)
-        #plt.show()
         
         self.penals = []
         self.penals_intervals = {}

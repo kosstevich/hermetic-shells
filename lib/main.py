@@ -9,11 +9,9 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     
     filename = open_file()
-
+    
     model = Model(filename)
-    # model.control(0)
-    # model.control(1)
-    #model.control(0)
+
     main_window = MainWindow(model)
 
     app.exec_()
