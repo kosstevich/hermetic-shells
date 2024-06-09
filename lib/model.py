@@ -23,7 +23,7 @@ class Model:
             print("Значения для ТВС:")
             print(self.penals[i].cassetes)
 
-    def control(self, id, intervals_delta): #TODO many penals
+    def control(self, id, intervals_delta=None): #TODO many penals
         if not intervals_delta:
             intervals_delta = self._get_intervals(self.data.penals_id[id])
 

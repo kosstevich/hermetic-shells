@@ -76,8 +76,14 @@ class Penal:
                 df.to_excel(excel_writer=writer,sheet_name=sheet, index=False)
                 self.fragments[i].recheck_df.to_excel(excel_writer=writer, sheet_name=sheet, index=False)
     
-    def check_distribution(self, criterium):
-        pass
+    def check_distribution(self, criterium, id):
+        output = {}
+
+        output["Тест Манна-Уитни"] = self.fragments[id].mannwhitney_test(criterium)
+        output["Тест Шапиро-Уилка"] = self.fragments[id].shapiro_test(criterium)
+        output["Двухвыборочный тест Стьюдента"] = self.fragments[id].t_test(criterium)
+
+        return output
 
 class Fragment:
     '''
@@ -87,6 +93,52 @@ class Fragment:
         self.df = df
         self.non_hermetic = {} # {Id1:[criterium1,criterium2],...}
         self.recheck = {}
+
+    def shapiro_test(self, criterium):
+        statistic, pvalue = stats.shapiro(self.df[criterium])
+        # print("p-value: %s" % pvalue)
+
+        return (pvalue, None)
+
+    def t_test(self, criterium):
+        pvalues = []
+
+        for i in range(0,1000):
+            n1, n2 = random_generate(self.df, criterium)
+
+            statistic, pvalue = stats.ttest_ind(a=n1, b=n2, equal_var=True)
+
+            pvalues.append(pvalue)
+
+        pvalues = pd.Series(pvalues)
+        pvalue = pd.Series(pvalues).mean()
+        confidence = stats.norm.interval(confidence=0.95, loc=np.mean(pvalues), scale=stats.sem(pvalues))
+
+        # print("p-value: %s" % pvalue)
+        # print("Доверительный интервал для p-value")
+        # print(confidence)
+
+        return confidence
+
+    def mannwhitney_test(self, criterium):
+        pvalues = []
+        
+        for i in range(0,1000):
+            n1, n2 = random_generate(self.df, criterium)
+
+            statistic, pvalue = stats.mannwhitneyu(n1, n2, alternative='two-sided')
+
+            pvalues.append(pvalue)
+
+        pvalues = pd.Series(pvalues)
+        pvalue = pd.Series(pvalues).mean()
+        confidence = stats.norm.interval(confidence=0.95, loc=np.mean(pvalues), scale=stats.sem(pvalues))
+
+        # print("p-value: %s" % pvalue)
+        # print("Доверительный интервал для p-value")
+        # print(confidence)
+
+        return confidence
 
     def calc_3sigma_params(self, df):
         parameters = {
@@ -186,9 +238,12 @@ def random_generate(df, criterium):
         if r == 0: n1.append(df[criterium].iloc[i])
         else: n2.append(df[criterium].iloc[i])
 
-    print("n1:")
-    print(n1)
-    print("n2:")
-    print(n2)
+    while len(n1) == 0 or len(n2) == 0:
+        n1, n2 = random_generate(df, criterium)
+
+    # print("n1:")
+    # print(n1)
+    # print("n2")
+    # print(n2)
 
     return n1,n2
